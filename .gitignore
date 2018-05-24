@@ -1,0 +1,12 @@
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+dist
+
+# pytest caches
+tests/.cache
+.cache/v/cache
+.coverage
+.coverage*
+htmlcov
