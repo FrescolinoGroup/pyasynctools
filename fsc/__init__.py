@@ -1,10 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Author:  Dominik Gresch <greschd@gmx.ch>
-# Date:    30.03.2016 12:36:11 CEST
-# File:    __init__.py
-
+# pylint: disable=missing-docstring
 
 import pkgutil as _pkgutil
 
