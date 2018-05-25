@@ -6,7 +6,9 @@ dist
 
 # pytest caches
 tests/.cache
+tests/.pytest_cache
 .cache/v/cache
+.pytest_cache/v/cache
 .coverage
 .coverage*
 htmlcov
