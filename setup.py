@@ -33,6 +33,13 @@ setup(
     author_email='frescolino@lists.phys.ethz.ch',
     description=description,
     install_requires=['fsc.export'],
+    extras_require={
+        'dev': [
+            'pytest', 'pytest-cov', 'yapf==0.20.2', 'prospector', 'pre-commit',
+            'pylint', 'sphinx', 'sphinx-rtd-theme', 'ipython>=6.2',
+            'matplotlib'
+        ]
+    },
     long_description=readme,
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
