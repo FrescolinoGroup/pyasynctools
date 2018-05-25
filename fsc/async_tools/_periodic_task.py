@@ -18,8 +18,11 @@ class PeriodicTask:
         run_on_exit (bool): Determines if the function should be run again when exiting the context manager.
     """
 
-    def __init__(self, *, loop, task_func, delay=1., run_on_exit=True):
-        self._loop = loop
+    def __init__(self, task_func, *, loop=None, delay=1., run_on_exit=True):
+        if loop is None:
+            self._loop = asyncio.get_event_loop()
+        else:
+            self._loop = loop
         self._task_func = task_func
         self._delay = float(delay)
         self._run_on_exit = run_on_exit

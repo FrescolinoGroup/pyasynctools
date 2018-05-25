@@ -1,16 +1,15 @@
-pyasynctools
-===========
+fsc.async-tools
+===============
 
-The developer of this module is too lazy to write an introduction. He brings shame and dishonor upon himself and, more importantly, the great C. Frescolino. Let it be known that he shall acquire beers for all frescolino developers to redeem his sins.
+The ``fsc.async-tools`` module defines tools for using Python's async / await functionality. 
 
-Tutorial, Examples and Documentation
-====================================
+Tutorial and Reference
+======================
 .. toctree::
     :maxdepth: 2
-    
+
     tutorial.rst
-    examples.rst
-    documentation.rst
+    reference.rst
 
 Indices and tables
 ==================

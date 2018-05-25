@@ -1,5 +1,5 @@
-Documentation
-=============
+Reference
+=========
 
 .. automodule:: fsc.async_tools
     :members:
