@@ -35,7 +35,7 @@ setup(
     install_requires=['fsc.export'],
     extras_require={
         'dev': [
-            'pytest', 'pytest-cov', 'yapf==0.20.2', 'prospector', 'pre-commit',
+            'pytest', 'pytest-cov', 'yapf==0.22.0', 'prospector', 'pre-commit',
             'pylint', 'sphinx', 'sphinx-rtd-theme', 'ipython>=6.2',
             'matplotlib'
         ]
