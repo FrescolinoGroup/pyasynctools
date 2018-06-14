@@ -8,7 +8,7 @@ import asyncio
 
 import pytest
 
-from fsc.async_tools import BatchSubmitter
+from fsc.async_tools import BatchSubmitter, PeriodicTask
 
 
 @pytest.fixture(params=[0., 1.])
@@ -44,26 +44,42 @@ def test_failing_run():
             loop.run_until_complete(f(1))
 
 
-def test_manual_start_stop():
+def test_start_stop():
     """
     Test a BatchSubmitter that is manually started and stopped.
     """
 
     async def func(x):
+        await asyncio.sleep(0.1)
         return x
 
+    async def run():  # pylint: disable=missing-docstring
+        submitter = BatchSubmitter(
+            func,
+            min_batch_size=3,
+            max_batch_size=5,
+            sleep_time=0.,
+            timeout=0.2
+        )
+        count = 0
+
+        def stopstart():
+            nonlocal count
+            count += 1
+            submitter.stop()
+            submitter.start()
+
+        inputs = list(range(50))
+        futures = []
+        submitter.start()
+        async with PeriodicTask(stopstart, delay=0.1):
+            for i in inputs:
+                await asyncio.sleep(0.01)
+                futures.append(asyncio.ensure_future(submitter(i)))
+
+        results = await asyncio.gather(*futures)
+        assert count > 4
+        assert inputs == results
+
     loop = asyncio.get_event_loop()
-    submitter = BatchSubmitter(func)
-    input_ = list(range(10))
-
-    fut1 = asyncio.gather(*[submitter(i) for i in input_])
-    submitter.start()
-    loop.run_until_complete(fut1)
-    assert fut1.result() == input_
-
-    fut2 = asyncio.gather(*[submitter(i) for i in input_])
-    submitter.stop()
-
-    submitter.start()
-    loop.run_until_complete(fut2)
-    assert fut2.result() == input_
+    loop.run_until_complete(run())

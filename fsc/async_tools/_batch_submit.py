@@ -67,26 +67,20 @@ class BatchSubmitter:
 
     def start(self):
         """
-        Starts the BatchSubmitter. This assumes that the event loop is already running.
+        Starts the BatchSubmitter. Tasks will only be executed once the event loop is started.
         """
         self._create_task = asyncio.Task(self._create(), loop=self._loop)
         self._collect_task = asyncio.Task(self._collect(), loop=self._loop)
 
     def stop(self):
         """
-        Stops the BatchSubmitter. All pending
+        Stops the BatchSubmitter. Pending tasks be evaluated once the BatchSubmitter is started again.
         """
         self._create_task.cancel()
         self._collect_task.cancel()
-        self._loop.run_until_complete(self._wait_for_cancel())
+        self._process_finished_batches()
         self._create_task = None
         self._collect_task = None
-
-    async def _wait_for_cancel(self):
-        while not (
-            self._create_task.cancelled() and self._collect_task.cancelled()
-        ):
-            asyncio.sleep(self._sleep_time)
 
     async def _create(self):
         """
@@ -94,16 +88,22 @@ class BatchSubmitter:
         """
         while True:
             await self._wait_for_tasks()
-            inputs = []
-            futures = []
-            for _ in range(self._max_batch_size):
-                try:
-                    key, fut = self._tasks.get_nowait()
-                    inputs.append(key)
-                    futures.append(fut)
-                except asyncio.QueueEmpty:
-                    break
-            self._batches[asyncio.ensure_future(self._func(inputs))] = futures
+            self._launch_batch()
+
+    def _launch_batch(self):
+        """
+        Launch a calculation batch.
+        """
+        inputs = []
+        futures = []
+        for _ in range(self._max_batch_size):
+            try:
+                key, fut = self._tasks.get_nowait()
+                inputs.append(key)
+                futures.append(fut)
+            except asyncio.QueueEmpty:
+                break
+        self._batches[asyncio.ensure_future(self._func(inputs))] = futures
 
     async def _wait_for_tasks(self):
         """
@@ -125,20 +125,24 @@ class BatchSubmitter:
         """
         while True:
             await asyncio.sleep(self._sleep_time)
-            for batch_future, task_futures in list(self._batches.items()):
-                if batch_future.done():
-                    try:
-                        results = await batch_future
-                        for fut, res in zip(task_futures, results):
-                            fut.set_result(res)
-                        del self._batches[batch_future]
-                    except Exception as exc:  # pylint: disable=broad-except
-                        if isinstance(exc, asyncio.CancelledError):
-                            raise exc
-                        else:
-                            for fut in task_futures:
-                                fut.set_exception(exc)
-                            del self._batches[batch_future]
+            self._process_finished_batches()
+
+    def _process_finished_batches(self):
+        """
+        Assign the results / exceptions to the futures of all finished batches.
+        """
+        for batch_future, task_futures in list(self._batches.items()):
+            if batch_future.done():
+                try:
+                    results = batch_future.result()
+                    assert len(results) == len(task_futures)
+                    for fut, res in zip(task_futures, results):
+                        fut.set_result(res)
+                except Exception as exc:  # pylint: disable=broad-except
+                    for fut in task_futures:
+                        fut.set_exception(exc)
+                finally:
+                    del self._batches[batch_future]
 
     async def __call__(self, x):
         fut = self._loop.create_future()
