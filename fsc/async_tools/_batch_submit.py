@@ -6,9 +6,12 @@ function into batches.
 import time
 import asyncio
 
+from fsc.export import export
+
 from . import wrap_to_coroutine
 
 
+@export
 class BatchSubmitter:
     """
     Context manager that collects calls to a function of one parameter, and submits
