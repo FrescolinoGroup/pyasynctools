@@ -22,3 +22,12 @@ If we wish to run this function periodically, we can use the ``async with`` synt
     :code: python
 
 Additionally, you can control the delay between periodic tasks and whether the task is executed again when exiting the context manager, as described in the :class:`reference <.PeriodicTask>`.
+
+
+wrap_to_coroutine
+-----------------
+
+The decorator :func:`.wrap_to_coroutine` simplifies creating interfaces which can take either a regular function or a coroutine. It wraps the input into a coroutine, which is compatible with the ``await`` syntax.
+
+.. include:: ../../examples/wrap_to_coroutine.py
+      :code: python

@@ -10,5 +10,6 @@ Defines tools for simplifying the use of asynchronous Python.
 from ._version import __version__
 
 from ._periodic_task import *
+from ._wrap_to_coroutine import *
 
-__all__ = _periodic_task.__all__  # pylint: disable=undefined-variable
+__all__ = _periodic_task.__all__ + _wrap_to_coroutine.__all__  # pylint: disable=undefined-variable
