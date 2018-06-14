@@ -34,10 +34,10 @@ class PeriodicTask:
     async def __aexit__(self, exc_type, exc_value, traceback):  # pylint: disable=missing-docstring
         while not self._task_loop_started:  # Make sure the periodic task was started
             await asyncio.sleep(0.)
-        self._task_loop_started = False
         self._periodic_task.cancel()
         await self._periodic_task
         del self._periodic_task
+        self._task_loop_started = False
 
     async def _task_loop(self):
         """
