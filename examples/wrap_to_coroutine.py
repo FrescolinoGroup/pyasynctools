@@ -15,15 +15,22 @@ def sync_snek():
 
 @wrap_to_coroutine
 async def async_snek():
-    asyncio.sleep(0.)
+    await asyncio.sleep(0.)
     return '≻:======>···'
 
 
-if __name__ == '__main__':
-    LOOP = asyncio.get_event_loop()
-    FUT_SYNC = asyncio.ensure_future(sync_snek())
-    FUT_ASYNC = asyncio.ensure_future(async_snek())
-    LOOP.run_until_complete(asyncio.gather(FUT_SYNC, FUT_ASYNC))
+def main():
+    """
+    Run the 'wrap_to_coroutine' example.
+    """
+    loop = asyncio.get_event_loop()
+    fut_sync = asyncio.ensure_future(sync_snek())
+    fut_async = asyncio.ensure_future(async_snek())
+    loop.run_until_complete(asyncio.gather(fut_sync, fut_async))
 
-    print('sync snek ', FUT_SYNC.result())
-    print('async snek', FUT_ASYNC.result())
+    print('sync snek ', fut_sync.result())
+    print('async snek', fut_async.result())
+
+
+if __name__ == '__main__':
+    main()
