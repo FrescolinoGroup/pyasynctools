@@ -32,7 +32,7 @@ setup(
     author='C. Frescolino',
     author_email='frescolino@lists.phys.ethz.ch',
     description=description,
-    install_requires=['fsc.export'],
+    install_requires=['fsc.export', 'decorator'],
     extras_require={
         'dev': [
             'pytest', 'pytest-cov', 'yapf==0.22.0', 'prospector', 'pre-commit',

@@ -4,11 +4,14 @@ Defines a decorator for wrapping functions and coroutines into a coroutine.
 
 from collections.abc import Awaitable
 
+from decorator import decorator
+
 from fsc.export import export
 
 
 @export
-def wrap_to_coroutine(func):
+@decorator
+async def wrap_to_coroutine(func, *args, **kwargs):
     """
     Wraps a function or coroutine into a coroutine.
 
@@ -18,10 +21,7 @@ def wrap_to_coroutine(func):
         The function or coroutine that should be wrapped.
     """
 
-    async def inner(*args, **kwargs):
-        res = func(*args, **kwargs)
-        if isinstance(res, Awaitable):
-            return await res
-        return res
-
-    return inner
+    res = func(*args, **kwargs)
+    if isinstance(res, Awaitable):
+        return await res
+    return res
