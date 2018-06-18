@@ -73,17 +73,13 @@ class BatchSubmitter:
         Starts the BatchSubmitter. Tasks will only be executed once the event loop is started.
         """
         self._create_task = asyncio.Task(self._create(), loop=self._loop)
-        self._collect_task = asyncio.Task(self._collect(), loop=self._loop)
 
     def stop(self):
         """
         Stops the BatchSubmitter. Pending tasks be evaluated once the BatchSubmitter is started again.
         """
         self._create_task.cancel()
-        self._collect_task.cancel()
-        self._process_finished_batches()
         self._create_task = None
-        self._collect_task = None
 
     async def _create(self):
         """
@@ -106,7 +102,9 @@ class BatchSubmitter:
                 futures.append(fut)
             except asyncio.QueueEmpty:
                 break
-        self._batches[asyncio.ensure_future(self._func(inputs))] = futures
+        task = asyncio.ensure_future(self._func(inputs))
+        task.add_done_callback(self._process_finished_batch)
+        self._batches[task] = futures
 
     async def _wait_for_tasks(self):
         """
@@ -122,30 +120,21 @@ class BatchSubmitter:
                 return
             await asyncio.sleep(0)
 
-    async def _collect(self):
-        """
-        Evaluates finished batches.
-        """
-        while True:
-            await asyncio.sleep(self._sleep_time)
-            self._process_finished_batches()
-
-    def _process_finished_batches(self):
+    def _process_finished_batch(self, batch_future):
         """
         Assign the results / exceptions to the futures of all finished batches.
         """
-        for batch_future, task_futures in list(self._batches.items()):
-            if batch_future.done():
-                try:
-                    results = batch_future.result()
-                    assert len(results) == len(task_futures)
-                    for fut, res in zip(task_futures, results):
-                        fut.set_result(res)
-                except Exception as exc:  # pylint: disable=broad-except
-                    for fut in task_futures:
-                        fut.set_exception(exc)
-                finally:
-                    del self._batches[batch_future]
+        try:
+            task_futures = self._batches[batch_future]
+            results = batch_future.result()
+            assert len(results) == len(task_futures)
+            for fut, res in zip(task_futures, results):
+                fut.set_result(res)
+        except Exception as exc:  # pylint: disable=broad-except
+            for fut in task_futures:
+                fut.set_exception(exc)
+        finally:
+            del self._batches[batch_future]
 
     async def __call__(self, x):
         fut = self._loop.create_future()
