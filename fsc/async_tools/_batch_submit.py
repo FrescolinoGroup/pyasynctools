@@ -31,8 +31,7 @@ class BatchSubmitter:
         tasks, even if the minimum batch size is not reached.
     sleep_time : float
         Time the batch submitter will sleep between checking if the minimum
-        batch size has been reached, and checking if there are finished
-        calculations.
+        batch size has been reached.
     min_batch_size : int
         Minimum batch size that will be submitted before the timeout has been
         reached.
@@ -45,8 +44,8 @@ class BatchSubmitter:
         func,
         *,
         loop=None,
-        timeout=0.,
-        sleep_time=0.1,
+        timeout=0.1,
+        sleep_time=0.,
         min_batch_size=100,
         max_batch_size=1000
     ):

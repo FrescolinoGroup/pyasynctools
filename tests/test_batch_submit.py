@@ -39,7 +39,7 @@ def test_failing_run():
         raise ValueError
 
     loop = asyncio.get_event_loop()
-    f = BatchSubmitter(func)
+    f = BatchSubmitter(func, timeout=0.)
     with pytest.raises(ValueError):
         loop.run_until_complete(f(1))
 
