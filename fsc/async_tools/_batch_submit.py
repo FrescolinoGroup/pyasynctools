@@ -125,7 +125,7 @@ class BatchSubmitter:
         Assign the results / exceptions to the futures of all finished batches.
         """
         try:
-            task_futures = self._batches[batch_future]
+            task_futures = self._batches.pop(batch_future)
             results = batch_future.result()
             assert len(results) == len(task_futures)
             for fut, res in zip(task_futures, results):
@@ -133,5 +133,3 @@ class BatchSubmitter:
         except Exception as exc:  # pylint: disable=broad-except
             for fut in task_futures:
                 fut.set_exception(exc)
-        finally:
-            del self._batches[batch_future]
