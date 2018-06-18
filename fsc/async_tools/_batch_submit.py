@@ -3,7 +3,6 @@ Defines a context manager that can be used to group calls to a 'listable'
 function into batches.
 """
 
-import time
 import asyncio
 
 from fsc.export import export
@@ -56,38 +55,40 @@ class BatchSubmitter:
         self._min_batch_size = min_batch_size
         self._max_batch_size = max_batch_size
         self._tasks = asyncio.Queue()
-        self._run_task = None
         self._batches = dict()
-        self._create_task = None
-        self._collect_task = None
+        self._submit_loop_running = False
+        self._last_call_time = None
 
-    def __enter__(self):
-        self.start()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.stop()
-
-    def start(self):
+    async def __call__(self, x):
         """
-        Starts the BatchSubmitter. Tasks will only be executed once the event loop is started.
+        Adds a task for the given input, and starts the submission loop if needed.
         """
-        self._create_task = asyncio.Task(self._create(), loop=self._loop)
+        fut = self._loop.create_future()
+        self._tasks.put_nowait((x, fut))
+        self._last_call_time = self._loop.time()
+        if not self._submit_loop_running:
+            asyncio.Task(self._submit_loop(), loop=self._loop)
+            self._submit_loop_running = True
+        return await fut
 
-    def stop(self):
-        """
-        Stops the BatchSubmitter. Pending tasks be evaluated once the BatchSubmitter is started again.
-        """
-        self._create_task.cancel()
-        self._create_task = None
-
-    async def _create(self):
+    async def _submit_loop(self):
         """
         Waits for tasks and then creates the batches which evaluate the function.
         """
-        while True:
+        while self._tasks:
             await self._wait_for_tasks()
             self._launch_batch()
+        self._submit_loop_running = False
+
+    async def _wait_for_tasks(self):
+        """
+        Waits until either the timeout has passed or the queue size is big enough.
+        """
+        assert self._tasks.qsize() > 0
+        while self._loop.time() - self._last_call_time < self._timeout:
+            if self._tasks.qsize() >= self._min_batch_size:
+                return
+            await asyncio.sleep(self._sleep_time)
 
     def _launch_batch(self):
         """
@@ -106,20 +107,6 @@ class BatchSubmitter:
         task.add_done_callback(self._process_finished_batch)
         self._batches[task] = futures
 
-    async def _wait_for_tasks(self):
-        """
-        Waits until either the timeout has passed or the queue size is big enough.
-        """
-        while True:
-            start_time = time.time()
-            while time.time() - start_time < self._timeout:
-                if self._tasks.qsize() >= self._min_batch_size:
-                    return
-                await asyncio.sleep(self._sleep_time)
-            if self._tasks.qsize() > 0:
-                return
-            await asyncio.sleep(0)
-
     def _process_finished_batch(self, batch_future):
         """
         Assign the results / exceptions to the futures of all finished batches.
@@ -135,8 +122,3 @@ class BatchSubmitter:
                 fut.set_exception(exc)
         finally:
             del self._batches[batch_future]
-
-    async def __call__(self, x):
-        fut = self._loop.create_future()
-        self._tasks.put_nowait((x, fut))
-        return await fut
