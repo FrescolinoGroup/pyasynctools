@@ -3,6 +3,8 @@ Defines a context manager that can be used to group calls to a 'listable'
 function into batches.
 """
 
+import sys
+import traceback
 import asyncio
 
 from fsc.export import export
@@ -56,7 +58,7 @@ class BatchSubmitter:
         self._max_batch_size = max_batch_size
         self._tasks = asyncio.Queue()
         self._batches = dict()
-        self._submit_loop_running = False
+        self._submit_loop_task = None
         self._last_call_time = None
 
     async def __call__(self, x):
@@ -66,19 +68,30 @@ class BatchSubmitter:
         fut = self._loop.create_future()
         self._tasks.put_nowait((x, fut))
         self._last_call_time = self._loop.time()
-        if not self._submit_loop_running:
-            asyncio.Task(self._submit_loop(), loop=self._loop)
-            self._submit_loop_running = True
+        if self._submit_loop_task is None or self._submit_loop_task.done():
+            self._submit_loop_task = asyncio.Task(
+                self._submit_loop(), loop=self._loop
+            )
+            self._submit_loop_task.add_done_callback(self._abort_on_exception)
         return await fut
 
     async def _submit_loop(self):
         """
         Waits for tasks and then creates the batches which evaluate the function.
         """
-        while self._tasks:
+        while self._tasks.qsize() > 0:
             await self._wait_for_tasks()
             self._launch_batch()
-        self._submit_loop_running = False
+
+    @staticmethod
+    def _abort_on_exception(fut):
+        """
+        Callback that forces a SystemExit when there is an exception in the submit loop.
+        """
+        try:
+            fut.result()
+        except Exception:  # pylint: disable=broad-except
+            sys.exit(''.join(traceback.format_exception(*sys.exc_info())))
 
     async def _wait_for_tasks(self):
         """

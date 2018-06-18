@@ -4,6 +4,7 @@ Defines tests for the BatchSubmitter.
 
 # pylint: disable=redefined-outer-name
 
+import time
 import asyncio
 
 import pytest
@@ -41,3 +42,18 @@ def test_failing_run():
     f = BatchSubmitter(func)
     with pytest.raises(ValueError):
         loop.run_until_complete(f(1))
+
+
+def test_start_twice(echo_submitter):
+    """
+    Test a BatchSubmitter where the submit loop needs to start twice.
+    """
+    loop = asyncio.get_event_loop()
+    input_ = list(range(100))
+    fut = asyncio.gather(*[echo_submitter(i) for i in input_])
+    loop.run_until_complete(fut)
+    assert fut.result() == input_
+    time.sleep(1.)
+    fut = asyncio.gather(*[echo_submitter(i) for i in input_])
+    loop.run_until_complete(fut)
+    assert fut.result() == input_
