@@ -53,5 +53,3 @@ def test_doc_func(func_to_wrap):
     assert wrapped.__doc__ == func_to_wrap.__doc__
     assert wrapped.__name__ == func_to_wrap.__name__
     assert inspect.signature(func_to_wrap) == inspect.signature(wrapped)
-    assert inspect.getfullargspec(func_to_wrap
-                                  ) == inspect.getfullargspec(wrapped)
