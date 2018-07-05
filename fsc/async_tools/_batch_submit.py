@@ -123,8 +123,8 @@ class BatchSubmitter:
         """
         Assign the results / exceptions to the futures of all finished batches.
         """
+        task_futures = self._batches.pop(batch_future)
         try:
-            task_futures = self._batches.pop(batch_future)
             results = batch_future.result()
             assert len(results) == len(task_futures)
             for fut, res in zip(task_futures, results):
