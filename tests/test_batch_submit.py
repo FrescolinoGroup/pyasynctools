@@ -57,3 +57,51 @@ def test_start_twice(echo_submitter):
     fut = asyncio.gather(*[echo_submitter(i) for i in input_])
     loop.run_until_complete(fut)
     assert fut.result() == input_
+
+
+async def factorial(inp_list):  # pylint: disable=missing-docstring
+    max_val = max(inp_list)
+    assert max_val > 0
+    results = [1]
+    for val in range(1, max_val + 1):
+        results.append(results[-1] * val)
+    return [results[i] for i in inp_list]
+
+
+def test_factorial():
+    """
+    Test BatchSubmitter with the factorial coroutine.
+    """
+    loop = asyncio.get_event_loop()
+    func = BatchSubmitter(factorial, timeout=0., max_batch_size=1)
+    res = loop.run_until_complete(asyncio.gather(func(4), func(3)))
+    assert res == [24, 6]
+
+
+async def recursive_coro_troll(inp_list):
+    """
+    A function that gives different results depending on the batch.
+    """
+    if all(inp <= 0 for inp in inp_list):
+        return inp_list
+    return await recursive_coro_troll([i - 1 for i in inp_list])
+
+
+def test_recursive_calls():
+    """
+    Test BatchSubmitter with a recursive coroutine.
+    """
+    loop = asyncio.get_event_loop()
+    func = BatchSubmitter(recursive_coro_troll, timeout=0., max_batch_size=1)
+    res = loop.run_until_complete(asyncio.gather(func(3), func(6)))
+    assert res == [0, 0]
+
+
+def test_recursive_calls_timeout():
+    """
+    Test BatchSubmitter with a recursive coroutine, with different timings.
+    """
+    loop = asyncio.get_event_loop()
+    func = BatchSubmitter(recursive_coro_troll, timeout=0.1, max_batch_size=2)
+    res = loop.run_until_complete(asyncio.gather(func(3), func(6)))
+    assert res == [-3, 0]

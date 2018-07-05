@@ -32,9 +32,10 @@ class BatchSubmitter:
     sleep_time : float
         Time the batch submitter will sleep between checking if the minimum
         batch size has been reached.
-    min_batch_size : int
+    wait_batch_size : int
         Minimum batch size that will be submitted before the timeout has been
-        reached.
+        reached. Is set to the same value as ``max_batch_size`` unless
+        specified explicitly.
     max_batch_size : int
         The maximum size of a batch that will be submitted.
     """
@@ -46,15 +47,23 @@ class BatchSubmitter:
         loop=None,
         timeout=0.1,
         sleep_time=0.,
-        min_batch_size=100,
+        wait_batch_size=None,
         max_batch_size=1000
     ):
         self._func = wrap_to_coroutine(func)
         self._loop = loop or asyncio.get_event_loop()
         self._timeout = timeout
         self._sleep_time = sleep_time
-        self._min_batch_size = min_batch_size
+
+        if max_batch_size <= 0:
+            raise ValueError('max_batch_size must be positive')
         self._max_batch_size = max_batch_size
+        if wait_batch_size is None:
+            wait_batch_size = self._max_batch_size
+        if wait_batch_size <= 0:
+            raise ValueError('wait_batch_size must be positive')
+        self._wait_batch_size = wait_batch_size
+
         self._tasks = asyncio.Queue()
         self._batches = dict()
         self._submit_loop_task = None
@@ -98,7 +107,7 @@ class BatchSubmitter:
         """
         assert self._tasks.qsize() > 0
         while self._loop.time() - self._last_call_time < self._timeout:
-            if self._tasks.qsize() >= self._min_batch_size:
+            if self._tasks.qsize() >= self._wait_batch_size:
                 return
             await asyncio.sleep(self._sleep_time)
 
@@ -123,8 +132,8 @@ class BatchSubmitter:
         """
         Assign the results / exceptions to the futures of all finished batches.
         """
+        task_futures = self._batches.pop(batch_future)
         try:
-            task_futures = self._batches.pop(batch_future)
             results = batch_future.result()
             assert len(results) == len(task_futures)
             for fut, res in zip(task_futures, results):
