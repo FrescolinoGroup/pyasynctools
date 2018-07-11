@@ -1,5 +1,5 @@
 """
-Defines a context manager that can be used to group calls to a 'listable'
+Defines a function wrapper that can be used to group calls to a 'listable'
 function into batches.
 """
 
@@ -15,7 +15,7 @@ from . import wrap_to_coroutine
 @export
 class BatchSubmitter:
     """
-    Context manager that collects calls to a function of one parameter, and submits
+    Function wrapper that collects calls to a function of one parameter, and submits
     it in batches to a function which can take a list of parameters.
 
     Arguments
