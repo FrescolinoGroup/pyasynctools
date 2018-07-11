@@ -1,20 +1,17 @@
 language: python
 cache: pip
-#~ sudo: true
 python:
-    - "2.7"
-    - "3.4"
-    - "3.5"
-
-# if scipy is needed
-#~ before_install:
-    #~ - sudo apt-get update -qq
-    #~ - sudo apt-get install -qq liblapack.so 
-
+  - "3.5"
+  - "3.6"
+  - "3.7"
+env:
+  - TEST_TYPE="test"
+matrix:
+  include:
+    - python: 3.7
+      env: TEST_TYPE="compliance"
 install:
-    - pip install .
-
-# run tests
+  - pip install .
 script:
-    - cd tests 
-    - py.test
+  - if [ "$TEST_TYPE" == "compliance" ] ; then pip install .[dev]; pre-commit run --all-files ; fi
+  - if [ "$TEST_TYPE" == "test" ] ; then cd tests; py.test ; fi
