@@ -35,8 +35,10 @@ def limit_parallel(max_num_parallel, sleep_time=0.):
             while count >= max_num_parallel:
                 await asyncio.sleep(sleep_time)
             count += 1
-            res = await func_wrapped(*args, **kwargs)
-            count -= 1
+            try:
+                res = await func_wrapped(*args, **kwargs)
+            finally:
+                count -= 1
             return res
 
         return inner
