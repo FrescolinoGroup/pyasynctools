@@ -54,3 +54,27 @@ def test_limit_parallel(count_coro, max_num_parallel):  # pylint: disable=redefi
     assert get_max_count(count_coro, loop) > 10
     limited_coro = limit_parallel(max_num_parallel)(count_coro)
     assert get_max_count(limited_coro, loop) < max_num_parallel
+
+
+def test_with_exception():
+    """
+    Tests that the limit_parallel decorator also works when the function may
+    throw an exception.
+    """
+
+    @limit_parallel(1)
+    async def less_than_ten(x):
+        if x < 10:
+            return x
+        raise ValueError('Value must be less than ten.')
+
+    loop = asyncio.get_event_loop()
+    res = loop.run_until_complete(
+        asyncio.gather(
+            *[asyncio.ensure_future(less_than_ten(x)) for x in range(20)],
+            return_exceptions=True
+        )
+    )
+    assert res[:10] == list(range(10))
+    for val in res[10:]:
+        assert isinstance(val, ValueError)
