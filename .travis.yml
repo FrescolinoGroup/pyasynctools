@@ -3,12 +3,11 @@ cache: pip
 python:
   - "3.5"
   - "3.6"
-  - "3.7"
 env:
   - TEST_TYPE="test"
 matrix:
   include:
-    - python: 3.7
+    - python: 3.6
       env: TEST_TYPE="compliance"
 install:
   - pip install .
