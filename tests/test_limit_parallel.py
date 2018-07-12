@@ -53,7 +53,9 @@ def test_limit_parallel(count_coro, max_num_parallel):  # pylint: disable=redefi
     loop = asyncio.get_event_loop()
     assert get_max_count(count_coro, loop) > 10
     limited_coro = limit_parallel(max_num_parallel)(count_coro)
-    assert get_max_count(limited_coro, loop) < max_num_parallel
+    assert max_num_parallel // 2 <= get_max_count(
+        limited_coro, loop
+    ) < max_num_parallel
 
 
 def test_with_exception():
