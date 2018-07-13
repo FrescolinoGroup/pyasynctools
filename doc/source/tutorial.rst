@@ -41,3 +41,11 @@ In the following example, the :class:`.BatchSubmitter` wraps a function which mu
 
 .. include:: ../../examples/batch_submit.py
     :code: python
+
+limit_parallel
+--------------
+
+The decorator :func:`.limit_parallel` can be used to limit the number of parallel calls to a given function. This can be useful in cases where a function uses a lot of resources, and so only a limited number can run concurrently.
+
+.. include:: ../../examples/limit_parallel.py
+    :code: python
